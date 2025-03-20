@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Task_manager.h"
+#include "notification.h"
 
 int main() {
     int choice, id;
@@ -16,13 +17,13 @@ int main() {
         printf("5. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
-        getchar(); // Clear input buffer
+        getchar(); 
 
         switch (choice) {
             case 1:
                 printf("Enter Title: ");
                 fgets(title, sizeof(title), stdin);
-                strtok(title, "\n"); // Remove newline
+                strtok(title, "\n"); 
                 printf("Enter Description: ");
                 fgets(description, sizeof(description), stdin);
                 strtok(description, "\n");
@@ -31,6 +32,8 @@ int main() {
                 strtok(deadline, "\n");
 
                 addTask(title, description, deadline);
+                
+                sendNotification("New task added!", title);
                 break;
 
             case 2:
@@ -53,12 +56,19 @@ int main() {
                 strtok(deadline, "\n");
 
                 editTask(id, title, description, deadline);
+                
+                
+                sendNotification("Task updated!", title);
                 break;
 
             case 4:
                 printf("Enter Task ID to delete: ");
                 scanf("%d", &id);
+                
                 deleteTask(id);
+
+                
+                sendNotification("Task deleted!", "Task Management System");
                 break;
 
             case 5:
