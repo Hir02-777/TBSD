@@ -6,7 +6,7 @@
 Task *head = NULL;  // Global head pointer for the task list
 
 void addTask(char *title, char *description, char *deadline) {
-    Task *newTask = (Task *)malloc(sizeof(Task));
+    Task *newTask = malloc(sizeof(Task));
     static int taskId = 1;
 
     newTask->id = taskId++;
