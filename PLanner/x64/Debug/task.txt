@@ -1,0 +1,2 @@
+1;Submit project;Ensure it meets all system requirements.;3;0
+2;Team meeting;Review final checklist.;5;0

@@ -1,0 +1,4 @@
+﻿  Source.c
+C:\Users\marcu\source\repos\New folder\PLanner\PLanner\Source.c(284,11): warning C4244: 'function': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\marcu\source\repos\New folder\PLanner\PLanner\Source.c(285,12): warning C4113: 'void (__cdecl *)()' differs in parameter lists from 'void (__cdecl *)(void)'
+  PLanner.vcxproj -> C:\Users\marcu\source\repos\New folder\PLanner\x64\Debug\PLanner.exe
