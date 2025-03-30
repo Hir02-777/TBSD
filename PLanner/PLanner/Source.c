@@ -53,6 +53,10 @@ int isValidDateFormat(const char* date) {
     for (int i = 0; i < 10; i++) {
         if (i == 4 || i == 7) continue;
         if (!isdigit(date[i])) return 0;
+        if (date[5] > 2) return 0;
+        if (date[5] == 1 && date[6] > 3) return 0;
+        if (date[8] > 4) return 0;
+        if (date[8] == 3 && date[9] > 1) return 0;
     }
     return 1;
 }
