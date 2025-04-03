@@ -4,19 +4,14 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include "notification.h"
+#include "task.h"
+
 
 #define MAX_TITLE_LEN 100
 #define MAX_DESC_LEN 300
 #define INIT_CAPACITY 10
 
-typedef struct {
-    int id;
-    char title[MAX_TITLE_LEN];
-    char dueDate[11]; // YYYY-MM-DD
-    int priority;
-    char description[MAX_DESC_LEN];
-    int completed;
-} Task;
 
 Task* taskList = NULL;
 int taskCount = 0;
@@ -50,16 +45,18 @@ void ensureCapacity() {
 
 int isValidDateFormat(const char* date) {
     if (strlen(date) != 10 || date[4] != '-' || date[7] != '-') return 0;
-    for (int i = 0; i < 10; i++) {
-        if (i == 4 || i == 7) continue;
-        if (!isdigit(date[i])) return 0;
-        if (date[5] > 2) return 0;
-        if (date[5] == 1 && date[6] > 3) return 0;
-        if (date[8] > 4) return 0;
-        if (date[8] == 3 && date[9] > 1) return 0;
-    }
+
+    // Extract parts of the date
+    int year, month, day;
+    if (sscanf(date, "%4d-%2d-%2d", &year, &month, &day) != 3) return 0;
+
+    // Basic range checks
+    if (month < 1 || month > 12) return 0;
+    if (day < 1 || day > 31) return 0;
+
     return 1;
 }
+
 
 void trimNewline(char* str) {
     size_t len = strlen(str);
@@ -87,19 +84,27 @@ void createTask() {
     scanf("%d", &newTask.priority);
     getchar();
 
-
     printf("Enter task description: ");
     fgets(newTask.description, MAX_DESC_LEN, stdin);
     trimNewline(newTask.description);
 
     newTask.completed = 0;
     taskList[taskCount++] = newTask;
-    printf("Task created successfully!\n");
+    printf("Notification: New Task created successfully!\n");
+
+    time_t now = time(NULL);
+    struct tm tm = *localtime(&now);
+    char today[11];
+    snprintf(today, sizeof(today), "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+    if (strcmp(newTask.dueDate, today) == 0) {
+        sendNotification(newTask); 
+    }
 }
 
 void displayTasks() {
     if (taskCount == 0) {
-        printf("No tasks available.\n");
+        printf("No tasks available to display.\n");
         return;
     }
     printf("\n--- Task List ---\n");
@@ -137,7 +142,7 @@ void modifyTask() {
             getchar();
             if (newPriority != -1) taskList[i].priority = newPriority;
 
-            printf("Task modified.\n");
+            printf("Notification: Task modified.\n");
             return;
         }
     }
@@ -155,7 +160,7 @@ void deleteTask() {
                 taskList[j] = taskList[j + 1];
             }
             taskCount--;
-            printf("Task deleted.\n");
+            printf("Notification:Task deleted!\n");
             return;
         }
     }
@@ -170,7 +175,7 @@ void completeTask() {
     for (int i = 0; i < taskCount; i++) {
         if (taskList[i].id == id) {
             taskList[i].completed = 1;
-            printf("Task marked as complete.\n");
+            printf("Notification: Task completed !.\n");
             return;
         }
     }
@@ -186,7 +191,7 @@ void showUpcomingTasks() {
             found = 1;
         }
     }
-    if (!found) printf("No upcoming tasks.\n");
+    if (!found) printf("Notification: No upcoming tasks.\n");
     printf("----------------------\n");
 }
 
@@ -208,26 +213,53 @@ void taskSearch() {
 }
 
 void deadlineCheck() {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    time_t now = time(NULL);
+    struct tm tm = *localtime(&now);
+
     char today[11];
     snprintf(today, sizeof(today), "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-    printf("\n--- Tasks Due Today (%s) ---\n", today);
+
+    printf("\n--- Deadline Overview ---\n");
     int found = 0;
+
     for (int i = 0; i < taskCount; i++) {
-        if (strcmp(taskList[i].dueDate, today) == 0 && !taskList[i].completed) {
-            printf("ID: %d | Title: %s | Priority: %d\n", taskList[i].id, taskList[i].title, taskList[i].priority);
-            found = 1;
+        if (taskList[i].completed) continue;
+
+        int comparison = strcmp(taskList[i].dueDate, today);
+
+        printf("ID: %d | Title: %s | Due: %s | Priority: %d | Status: ",
+            taskList[i].id,
+            taskList[i].title,
+            taskList[i].dueDate,
+            taskList[i].priority
+        );
+
+        if (comparison < 0) {
+            printf(" Overdue\n");
         }
+        else if (comparison == 0) {
+            printf("Due Today\n");
+        }
+        else {
+            printf("Upcoming\n");
+        }
+
+        found = 1;
     }
-    if (!found) printf("No tasks due today!\n");
+
+    if (!found) {
+        printf("No pending tasks with deadlines.\n");
+    }
+
     printf("----------------------------\n");
 }
+
+
 
 void saveToFile(const char* filename) {
     FILE* f = fopen(filename, "w");
     if (!f) {
-        printf("Error opening file to save.\n");
+        printf("Notification: Error opening file to save.\n");
         return;
     }
     for (int i = 0; i < taskCount; i++) {
@@ -235,13 +267,13 @@ void saveToFile(const char* filename) {
         fprintf(f, "%d;%s;%s;%d;%s;%d\n", t.id, t.title, t.dueDate, t.priority, t.description, t.completed);
     }
     fclose(f);
-    printf("Tasks saved to %s\n", filename);
+    printf("Notification: Tasks saved to %s\n", filename);
 }
 
 void loadFromFile(const char* filename) {
     FILE* f = fopen(filename, "r");
     if (!f) {
-        printf("No existing task file found.\n");
+        printf("Notification: No existing task file found.\n");
         return;
     }
     Task t;
@@ -251,7 +283,7 @@ void loadFromFile(const char* filename) {
         if (t.id >= taskCounter) taskCounter = t.id + 1;
     }
     fclose(f);
-    printf("Tasks loaded from %s\n", filename);
+    // printf("Tasks loaded from %s\n", filename); 
 }
 
 void menu(const char* filename) {
@@ -259,7 +291,8 @@ void menu(const char* filename) {
     do {
         printf("\n--- Student Planner ---\n");
         printf("1. Create Task\n2. View Tasks\n3. Modify Task\n4. Delete Task\n5. Complete Task\n");
-        printf("6. Upcoming Tasks\n7. Search\n8. Deadline Checker\n9. Import Tasks from File\n10. Save & Exit\nChoose: ");
+        printf("6. Upcoming Tasks\n7. Search\n8. Deadline Checker\n9. Snooze Task Notification\n");
+        printf("10. Dismiss Task Notification\n11. Check Notifications\n12. Save & Exit\nChoose: ");
         scanf("%d", &choice);
         getchar();
 
@@ -272,8 +305,61 @@ void menu(const char* filename) {
         case 6: showUpcomingTasks(); break;
         case 7: taskSearch(); break;
         case 8: deadlineCheck(); break;
-        case 9: saveToFile(filename); return;
-        default: printf("Invalid choice.\n");
+        case 9: {
+            int id, mins;
+            printf("Enter Task ID to snooze: ");
+            scanf("%d", &id);
+            getchar();
+            printf("Enter snooze duration (minutes): ");
+            scanf("%d", &mins);
+            getchar();
+            for (int i = 0; i < taskCount; i++) {
+                if (taskList[i].id == id) {
+                    snoozeNotification(taskList[i], mins);
+                    printf("Notification: Task Snoozed for %d minutes.\n", mins);
+                    break;
+                }
+            }
+            break;
+        }
+        case 10: {
+            int id;
+            printf("Enter Task ID to dismiss notification: ");
+            scanf("%d", &id);
+            getchar();
+            dismissNotification(id);
+            printf("Notification dismissed for Task ID %d.\n", id);
+            break;
+        }
+        case 11:
+            printf("\n--- Notifications ---\n");
+            for (int i = 0; i < taskCount; i++)
+            {
+              if (taskList[i].completed) continue; // skip completed tasks
+
+             printf("Task: %s\n", taskList[i].title);
+
+             if (strlen(taskList[i].description) > 0)
+                   {
+                    printf("Description: %s\n", taskList[i].description);
+                   }
+                else {
+                    printf("Description: (No description provided)\n");
+                }
+
+                printf("-----------------------------\n");
+            }
+
+            if (taskCount == 0) 
+            {
+                printf("Notification: No Notification\n");
+            }
+            break;
+        case 12:
+            saveToFile(filename);
+            return;
+        default:
+            printf("Invalid choice.\n");
         }
 
     } while (1);
@@ -284,17 +370,11 @@ int main(int argc, char* argv[]) {
         printf("Usage: %s tasks.txt\n", argv[0]);
         return 1;
     }
-
     srand(time(NULL));
-    atexit(cleanup);         
-    initTaskList();            
-    loadFromFile(argv[1]);     
-    menu(argv[1]);             
-
- 
-    int grid[2][2] = { {1, 2}, {3, 4} };
-    int* ptr = &grid[0][0];
-    printf("Pointer to grid[0][0] = %d\n", *ptr);
+    atexit(cleanup);
+    initTaskList();
+    loadFromFile(argv[1]);
+    menu(argv[1]);
 
     return 0;
 }
