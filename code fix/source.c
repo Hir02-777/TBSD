@@ -289,10 +289,19 @@ void loadFromFile(const char* filename) {
 void menu(const char* filename) {
     int choice;
     do {
-        printf("\n--- Student Planner ---\n");
-        printf("1. Create Task\n2. View Tasks\n3. Modify Task\n4. Delete Task\n5. Complete Task\n");
-        printf("6. Upcoming Tasks\n7. Search\n8. Deadline Checker\n9. Snooze Task Notification\n");
-        printf("10. Dismiss Task Notification\n11. Check Notifications\n12. Save & Exit\n13. Load to file\nChoose: ");
+        const char* menu[2][7] = {
+                {"1. Create Task", "2. View Task", "3. Modify Task", "4. Delete Task", "5. Complete Task", "6. Upcoming Task", "7. Search"},
+                {"8. Deadline Checker", "9. Snooze Task", "10. Dismiss Task", "11. Check Notification", "12. Save and Exit", "13. Load from File", "14. Exit"}
+        };
+
+        // Print the menu matrix
+        printf("==== Menu Matrix ====\n");
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 7; j++) {
+                printf("%-25s", menu[i][j]);
+            }
+            printf("\n");
+        }
         scanf("%d", &choice);
         getchar();
 
